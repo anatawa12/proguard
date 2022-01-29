@@ -257,26 +257,33 @@ public class Obfuscator implements Pass
             new DictionaryNameFactory(configuration.packageObfuscationDictionary, null) :
             null;
 
-        appView.programClassPool.classesAccept(
-            new ClassObfuscator(appView.programClassPool,
-                                appView.libraryClassPool,
-                                classNameFactory,
-                                packageNameFactory,
-                                configuration.useMixedCaseClassNames,
-                                configuration.keepPackageNames,
-                                configuration.flattenPackageHierarchy,
-                                configuration.repackageClasses,
-                                configuration.allowAccessModification,
-                                configuration.keepKotlinMetadata));
-
         // Come up with new names for all class members.
         NameFactory nameFactory = new SimpleNameFactory();
         if (configuration.obfuscationDictionary != null)
         {
             nameFactory =
-                new DictionaryNameFactory(configuration.obfuscationDictionary,
-                                          nameFactory);
+                    new DictionaryNameFactory(configuration.obfuscationDictionary,
+                            nameFactory);
         }
+
+        NameObfuscator obfuscator = new NameObfuscator(
+                appView.programClassPool,
+                appView.libraryClassPool,
+                classNameFactory,
+                packageNameFactory,
+                configuration.useMixedCaseClassNames,
+                configuration.keepPackageNames,
+                configuration.flattenPackageHierarchy,
+                configuration.repackageClasses,
+                configuration.allowAccessModification,
+                nameFactory
+        );
+
+        appView.programClassPool.classesAccept(
+            new ClassObfuscator(
+                    configuration.useMixedCaseClassNames,
+                    configuration.keepKotlinMetadata,
+                                obfuscator));
 
         WarningPrinter warningPrinter = new WarningLogger(logger, configuration.warn);
 
@@ -296,7 +303,7 @@ public class Obfuscator implements Pass
             appView.programClassPool.classesAccept(
                 new AllMemberVisitor(
                 new MemberObfuscator(configuration.overloadAggressively,
-                                     nameFactory,
+                                     obfuscator,
                                      descriptorMap)));
         }
         else
@@ -324,7 +331,7 @@ public class Obfuscator implements Pass
                     new AllMemberVisitor(
                     new MemberAccessFilter(0, AccessConstants.PRIVATE,
                     new MemberObfuscator(configuration.overloadAggressively,
-                                         nameFactory,
+                                         obfuscator,
                                          descriptorMap))),
 
                     // Clear the collected names.
@@ -375,7 +382,7 @@ public class Obfuscator implements Pass
                     new AllMemberVisitor(
                     new MemberAccessFilter(AccessConstants.PRIVATE, 0,
                     new MemberObfuscator(configuration.overloadAggressively,
-                                         nameFactory,
+                                         obfuscator,
                                          descriptorMap))),
 
                     // Clear the collected names.
@@ -432,7 +439,7 @@ public class Obfuscator implements Pass
                                             descriptorMap,
                                             warningPrinter,
                 new MemberObfuscator(configuration.overloadAggressively,
-                                     specialNameFactory,
+                                     obfuscator,
                                      specialDescriptorMap))))),
 
                 // Clear the collected names.
@@ -463,7 +470,7 @@ public class Obfuscator implements Pass
                                             descriptorMap,
                                             warningPrinter,
                 new MemberObfuscator(configuration.overloadAggressively,
-                                     specialNameFactory,
+                                     obfuscator,
                                      specialDescriptorMap)))),
 
                 // Clear the collected names.
@@ -502,9 +509,9 @@ public class Obfuscator implements Pass
                 new ReferencedKotlinMetadataVisitor(
                 new MultiKotlinMetadataVisitor(
                 // Come up with new names for Kotlin Properties.
-                new KotlinPropertyNameObfuscator(nameFactory),
+                new KotlinPropertyNameObfuscator(obfuscator),
                 // Obfuscate alias names.
-                new KotlinAliasNameObfuscator(nameFactory),
+                new KotlinAliasNameObfuscator(obfuscator),
 
                 // Ensure companion classes have $CompanionName suffix.
                 new KotlinCompanionEqualizer(),
@@ -531,9 +538,11 @@ public class Obfuscator implements Pass
                     new KotlinDataClassObfuscator())
             ))));
 
+            obfuscator.beginKotlinModuleScope();
             appView.resourceFilePool.resourceFilesAccept(
                 new ResourceFileProcessingFlagFilter(0, ProcessingFlags.DONT_OBFUSCATE,
-                                                     new KotlinModuleNameObfuscator(nameFactory)));
+                                                     new KotlinModuleNameObfuscator(obfuscator)));
+            obfuscator.endKotlinModuleScope();
         }
 
         // Print out the mapping, if requested.

@@ -23,7 +23,7 @@ package proguard.obfuscate.kotlin;
 import proguard.classfile.Clazz;
 import proguard.classfile.kotlin.*;
 import proguard.classfile.kotlin.visitor.*;
-import proguard.obfuscate.NameFactory;
+import proguard.obfuscate.NameObfuscator;
 import proguard.util.ProcessingFlags;
 
 public class KotlinAliasNameObfuscator
@@ -33,11 +33,11 @@ implements   KotlinMetadataVisitor,
              KotlinTypeAliasVisitor,
              KotlinTypeVisitor
 {
-    private final NameFactory nameFactory;
+    private final NameObfuscator obfuscator;
 
-    public KotlinAliasNameObfuscator(NameFactory nameFactory)
+    public KotlinAliasNameObfuscator(NameObfuscator obfuscator)
     {
-        this.nameFactory = nameFactory;
+        this.obfuscator = obfuscator;
     }
 
 
@@ -50,8 +50,9 @@ implements   KotlinMetadataVisitor,
     public void visitKotlinDeclarationContainerMetadata(Clazz                              clazz,
                                                         KotlinDeclarationContainerMetadata kotlinDeclarationContainerMetadata)
     {
-        this.nameFactory.reset();
+        this.obfuscator.beginKotlinAliasNameScope();
         kotlinDeclarationContainerMetadata.typeAliasesAccept(clazz, this);
+        this.obfuscator.endKotlinAliasNameScope();
     }
 
     @Override
@@ -74,7 +75,10 @@ implements   KotlinMetadataVisitor,
         // If the expanded type class is kept, assume it's a public API so keep the alias also.
         if ((kotlinTypeMetadata.referencedClass.getProcessingFlags() & ProcessingFlags.DONT_OBFUSCATE) == 0)
         {
-            kotlinTypeAliasMetadata.name = nameFactory.nextName();
+            kotlinTypeAliasMetadata.name = obfuscator.generateKotlinAliasName(clazz,
+                    kotlinDeclarationContainerMetadata,
+                    kotlinTypeAliasMetadata,
+                    kotlinTypeMetadata);
         }
     }
 }

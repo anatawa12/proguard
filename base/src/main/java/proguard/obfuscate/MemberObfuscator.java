@@ -42,7 +42,7 @@ public class MemberObfuscator
 implements   MemberVisitor
 {
     private final boolean        allowAggressiveOverloading;
-    private final NameFactory    nameFactory;
+    private final NameObfuscator obfuscator;
     private final Map            descriptorMap;
 
 
@@ -50,17 +50,17 @@ implements   MemberVisitor
      * Creates a new MemberObfuscator.
      * @param allowAggressiveOverloading a flag that specifies whether class
      *                                   members can be overloaded aggressively.
-     * @param nameFactory                the factory that can produce
+     * @param obfuscator                 the factory that can produce
      *                                   obfuscated member names.
      * @param descriptorMap              the map of descriptors to
      *                                   [new name - old name] maps.
      */
     public MemberObfuscator(boolean        allowAggressiveOverloading,
-                            NameFactory    nameFactory,
+                            NameObfuscator obfuscator,
                             Map            descriptorMap)
     {
         this.allowAggressiveOverloading = allowAggressiveOverloading;
-        this.nameFactory                = nameFactory;
+        this.obfuscator                 = obfuscator;
         this.descriptorMap              = descriptorMap;
     }
 
@@ -89,7 +89,7 @@ implements   MemberVisitor
         }
 
         // Get the name map, creating a new one if necessary.
-        Map nameMap = retrieveNameMap(descriptorMap, descriptor);
+        Map<String, String> nameMap = retrieveNameMap(descriptorMap, descriptor);
 
         // Get the member's new name.
         String newName = newMemberName(member);
@@ -97,14 +97,7 @@ implements   MemberVisitor
         // Assign a new one, if necessary.
         if (newName == null)
         {
-            // Find an acceptable new name.
-            nameFactory.reset();
-
-            do
-            {
-                newName = nameFactory.nextName();
-            }
-            while (nameMap.containsKey(newName));
+            newName = obfuscator.generateMemberName(clazz, member, nameMap.keySet());
 
             // Remember not to use the new name again in this name space.
             nameMap.put(newName, name);

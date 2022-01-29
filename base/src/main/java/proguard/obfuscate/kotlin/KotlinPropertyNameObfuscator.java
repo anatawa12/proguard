@@ -23,7 +23,7 @@ package proguard.obfuscate.kotlin;
 import proguard.classfile.Clazz;
 import proguard.classfile.kotlin.*;
 import proguard.classfile.kotlin.visitor.*;
-import proguard.obfuscate.NameFactory;
+import proguard.obfuscate.NameObfuscator;
 import proguard.util.ProcessingFlags;
 
 public class KotlinPropertyNameObfuscator
@@ -32,11 +32,11 @@ implements   KotlinMetadataVisitor,
              // Implementation interfaces.
              KotlinPropertyVisitor
 {
-    private final NameFactory nameFactory;
+    private final NameObfuscator obfuscator;
 
-    public KotlinPropertyNameObfuscator(NameFactory nameFactory)
+    public KotlinPropertyNameObfuscator(NameObfuscator obfuscator)
     {
-        this.nameFactory = nameFactory;
+        this.obfuscator = obfuscator;
     }
 
 
@@ -49,8 +49,9 @@ implements   KotlinMetadataVisitor,
     public void visitKotlinDeclarationContainerMetadata(Clazz                              clazz,
                                                         KotlinDeclarationContainerMetadata kotlinDeclarationContainerMetadata)
     {
-        this.nameFactory.reset();
+        this.obfuscator.beginKotlinPropertyScope();
         kotlinDeclarationContainerMetadata.propertiesAccept(clazz, this);
+        this.obfuscator.endKotlinPropertyScope();
     }
 
     // Implementations for KotlinPropertyVisitor.
@@ -73,6 +74,7 @@ implements   KotlinMetadataVisitor,
             return;
         }
 
-        kotlinPropertyMetadata.setProcessingInfo(nameFactory.nextName());
+        kotlinPropertyMetadata.setProcessingInfo(obfuscator.generateKotlinPropertyName(clazz, 
+                kotlinDeclarationContainerMetadata, kotlinPropertyMetadata));
     }
 }

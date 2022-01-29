@@ -21,25 +21,23 @@
 
 package proguard.obfuscate.kotlin;
 
-import proguard.obfuscate.NameFactory;
-import proguard.resources.file.ResourceFile;
+import proguard.obfuscate.NameObfuscator;
 import proguard.resources.file.visitor.*;
 import proguard.resources.kotlinmodule.KotlinModule;
 
 /**
- * Obfuscate module names using the given {@link NameFactory}.
+ * Obfuscate module names using the given {@link NameObfuscator}.
  *
  * @author James Hamilton
  */
 public class KotlinModuleNameObfuscator
 implements   ResourceFileVisitor
 {
-    private final NameFactory nameFactory;
+    private final NameObfuscator obfuscator;
 
-    public KotlinModuleNameObfuscator(NameFactory nameFactory)
+    public KotlinModuleNameObfuscator(NameObfuscator obfuscator)
     {
-        this.nameFactory = nameFactory;
-        this.nameFactory.reset();
+        this.obfuscator = obfuscator;
     }
 
 
@@ -48,6 +46,6 @@ implements   ResourceFileVisitor
     @Override
     public void visitKotlinModule(KotlinModule kotlinModule)
     {
-        kotlinModule.name = nameFactory.nextName();
+        kotlinModule.name = obfuscator.generateKotlinModuleName(kotlinModule);
     }
 }

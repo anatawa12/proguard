@@ -323,7 +323,7 @@ public class OutputWriter implements Pass
                     new NameFilteredDataEntryWriter(KotlinConstants.MODULE.FILE_EXPRESSION,
                     new FilteredDataEntryWriter(
                         new ProcessingFlagDataEntryFilter(resourceFilePool, 0, ProcessingFlags.DONT_PROCESS_KOTLIN_MODULE),
-                        new KotlinModuleDataEntryWriter(resourceFilePool, resourceWriter, KOTLIN_METADATA_VERSION)),
+                        new KotlinModuleDataEntryWriter(resourceFilePool, resourceWriter)),
                         resourceWriter);
             }
 
